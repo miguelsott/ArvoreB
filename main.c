@@ -31,7 +31,6 @@ Node * criaNode(Node *no, int ordem){
     return no;
 }
 
-/** REVISAR E VER SE DIVISÃO PRECISA DE MÉTODO DE ORDENAÇÃO PRA FUNCIONAR **/
 void insertionSort(int *array, int tamanho){
     int i, j, item;
 
@@ -48,10 +47,38 @@ void insertionSort(int *array, int tamanho){
     }
 }
 
-int posChave(int *array, int tam, int chave){
-    int pos = tam;
+void copiaNode(Node *sourc, Node *dest, int ordem, int m){
+    int i, j = 0;
 
-    while(pos > 0 && chave < array[pos - 1]){
+    for(i = m; i < ordem - 1; i++){
+        dest->chaves[j] = sourc->chaves[i];
+        dest->ptr_node[j + 1] = sourc->ptr_node[i + 1];
+        sourc->chaves[i] = -1;           //Verificar se precisa
+        sourc->ptr_node[i + 1] = NULL;   //Verificar se dá merda
+        dest->n_chaves++;
+        sourc->n_chaves--;
+        j++;
+    }
+}
+
+int ordenaNode(Node *no, int chave){
+    int i = no->n_chaves;
+
+    while(i > 0 && no->chaves[i - 1] > chave){
+        no->chaves[i] = no->chaves[i - 1];
+        no->ptr_node[i + 1] = no->ptr_node[i];
+        i--;
+    }
+
+    no->chaves[i] = chave;
+    no->n_chaves++;
+
+    return i;
+}
+
+int posDescida(int *array, int pos, int chave){
+
+    while(pos > 0 && array[pos - 1] > chave){
         pos--;
     }
 
@@ -59,7 +86,7 @@ int posChave(int *array, int tam, int chave){
 }
 
 void divide(Node *no, int chave, Node *direita, Node *novo, int *chave_promovida, int ordem){
-    /** REVISAR ESTE CÓDIGO DE DIVISÃO E MELHORÁ-LO **/
+
     if(no->folha == false){ //Nó a ser dividido é folha
         novo->folha = false;
     }
@@ -71,50 +98,33 @@ void divide(Node *no, int chave, Node *direita, Node *novo, int *chave_promovida
     j = 0;       //i para for, j para vetor do novo nó
 
     if(chave < no->chaves[m]){
-
-        for(i = m; i < ordem - 1; i++){
-            novo->chaves[j] = no->chaves[i];
-            novo->ptr_node[j + 1] = no->ptr_node[i + 1];
-            no->chaves[i] = -1;           //Verificar se precisa
-            no->ptr_node[i + 1] = NULL;   //Verificar se dá merda
-            novo->n_chaves++;
-            no->n_chaves--;
-            j++;
-        }
-        no->chaves[m] = chave;
+        copiaNode(no, novo, ordem, m);
+        no->chaves[no->n_chaves] = chave;
         no->n_chaves++;
-
         insertionSort(no->chaves, no->n_chaves);
-        pos = posChave(no->chaves, no->n_chaves, chave);
+        pos = posDescida(no->chaves, no->n_chaves, chave);
+        novo->ptr_node[0] = no->ptr_node[pos];
+        no->ptr_node[pos] = direita;
 
     } else {
-
-        for(i = m + 1; i < ordem - 1; i++){
-            novo->chaves[j] = no->chaves[i];
-            novo->ptr_node[j + 1] = no->ptr_node[i + 1];
-            no->chaves[i] = -1;           //Verificar se precisa
-            no->ptr_node[i + 1] = NULL;   //Verificar se dá merda
-            novo->n_chaves++;
-            no->n_chaves--;
-            j++;
-        }
+        copiaNode(no, novo, ordem, m + 1);
         novo->chaves[novo->n_chaves] = chave;
         novo->n_chaves++;
 
         insertionSort(novo->chaves, novo->n_chaves);
-        pos = posChave(novo->chaves, novo->n_chaves, chave);
+        pos = posDescida(novo->chaves, novo->n_chaves, chave);
+        novo->ptr_node[0] = no->ptr_node[no->n_chaves];
+        novo->ptr_node[pos] = direita;
     }
-
-    novo->ptr_node[0] = no->ptr_node[no->n_chaves];
-    novo->ptr_node[pos] = direita;
 
     *chave_promovida = no->chaves[(no->n_chaves) - 1];
 
     no->chaves[(no->n_chaves) - 1] = -1;
     no->n_chaves--;
+    printf("promo=%d\n", *chave_promovida);
 }
 
-bool buscaInsere(Node *atual, int chave, bool *promocao, int *chave_promovida, Node *novo, int ordem){
+bool buscaInsere(Node *atual, int chave, bool *promocao, int *chave_promovida, Node **novo, int ordem){
 
     int i;      //Contador para for
     bool jaExiste = false;      //Para saber se chave já existe no nó
@@ -142,7 +152,7 @@ bool buscaInsere(Node *atual, int chave, bool *promocao, int *chave_promovida, N
 
             } else {                            //Nó cheio
 
-                divide(atual, chave, NULL, novo, chave_promovida, ordem);
+                divide(atual, chave, NULL, *novo, chave_promovida, ordem);
                 *promocao = true;
             }
 
@@ -150,20 +160,21 @@ bool buscaInsere(Node *atual, int chave, bool *promocao, int *chave_promovida, N
 
         } else {            //Nó atual é interno
 
-            i = posChave(atual->chaves, atual->n_chaves, chave);
+            int pos = posDescida(atual->chaves, atual->n_chaves, chave);
 
-            bool status = buscaInsere(atual->ptr_node[i], chave, promocao, chave_promovida, novo, ordem);
+            bool status = buscaInsere(atual->ptr_node[pos], chave, promocao, chave_promovida, novo, ordem);
 
             if(status == true && *promocao == true){
                 if(atual->n_chaves < ordem - 1){
-                    atual->chaves[atual->n_chaves] = *chave_promovida;
-                    atual->n_chaves++;
-                    atual->ptr_node[atual->n_chaves] = novo;
+                    printf("oi\n");
+                    pos = ordenaNode(atual, *chave_promovida);
+                    atual->ptr_node[pos + 1] = *novo;
                     *promocao = false;
                 } else {
+                    printf("me\n");
                     Node *filho = criaNode(filho, ordem);
-                    divide(atual, chave, novo, filho, chave_promovida, ordem);
-                    novo = filho;
+                    divide(atual, *chave_promovida, *novo, filho, chave_promovida, ordem);
+                    *novo = filho;
                 }
             }
 
@@ -191,7 +202,7 @@ bool insere(Node **raiz, int chave, int ordem){
         int chave_promovida;
         Node *novo = criaNode(novo, ordem);
 
-        status = buscaInsere(*raiz, chave, &promocao, &chave_promovida, novo, ordem);
+        status = buscaInsere(*raiz, chave, &promocao, &chave_promovida, &novo, ordem);
 
         if(promocao == true){
             Node *nova_raiz = criaNode(nova_raiz, ordem);
@@ -209,8 +220,9 @@ bool insere(Node **raiz, int chave, int ordem){
     }
 }
 
-int printArvore(Node *no, int ordem){
+void printArvore(Node *no){
     int i;
+    bool mesmo_nivel = true;
 
     printf("[");
 
@@ -219,14 +231,25 @@ int printArvore(Node *no, int ordem){
     }
     printf("%d]", no->chaves[(no->n_chaves) - 1]);
 
-    if(no->folha == false){
+    if(no->folha == false && mesmo_nivel == true){
         printf("\n");
         for(i = 0; i <= no->n_chaves; i++){
-            printArvore(no->ptr_node[i], ordem);
+            printArvore(no->ptr_node[i]);
         }
     }
+}
 
-    return 1;
+void destroi(Node *no){
+	if (no->folha == true){
+		free (no);
+		no = NULL;
+	} else {
+		int i; 									//contador para for
+		for(i = 0; i <= no->n_chaves; i++)
+			destroi(no->ptr_node[i]);
+		free(no);
+		no = NULL;
+	}
 }
 
 int main(){
@@ -238,20 +261,35 @@ int main(){
 
     insere(&raiz, 4, ordem);
 
-    insere(&raiz, 10, ordem);
+    insere(&raiz, 7, ordem);
 
-    insere(&raiz, 1, ordem);
+    insere(&raiz, 20, ordem);
 
-    insere(&raiz, 22, ordem);
+    insere(&raiz, 15, ordem);
 
-    insere(&raiz, 24, ordem);
+    insere(&raiz, 6, ordem);
 
-    insere(&raiz, 2, ordem);
+    insere(&raiz, 4, ordem);
 
-    insere(&raiz, 3, ordem);
+    insere(&raiz, 18, ordem);
 
-    printArvore(raiz, ordem);
+    insere(&raiz, 5, ordem);
+
+    insere(&raiz, 70, ordem);
+
+    insere(&raiz, 50, ordem);
+
+    insere(&raiz, 9, ordem);
+
+    insere(&raiz, 35, ordem);
+
+    insere(&raiz, 25, ordem);
+
+
+   // printArvore(raiz);
+    printf("\n");
+
+    destroi(raiz);
 
     return 0;
-
 }
