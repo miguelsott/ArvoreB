@@ -210,33 +210,23 @@ bool insere(Node **raiz, int chave, int ordem){
 }
 
 int printArvore(Node *no, int ordem){
-    /*int i;
+    int i;
 
-    printf("[%d", no->chaves[0]);
+    printf("[");
 
-    for(i = 1; i < no->n_chaves - 1; i++){
-        printf(" %d", no->chaves[i]);
+    for(i = 0; i < no->n_chaves - 1; i++){
+        printf("%d ", no->chaves[i]);
     }
-    printf(" %d]\n", no->chaves[(no->n_chaves) - 1]);
+    printf("%d]", no->chaves[(no->n_chaves) - 1]);
 
     if(no->folha == false){
+        printf("\n");
         for(i = 0; i <= no->n_chaves; i++){
             printArvore(no->ptr_node[i], ordem);
         }
     }
 
-    return 1;*/
-
-    int i;
-    printf("FOLHA: %d\n", no->folha);
-    printf("N_CHAVES: %d\n", no->n_chaves);
-    for(i = 0; i < ordem - 1; i++){
-        printf("CHAVE[%d]: %d\n", i, no->chaves[i]);
-    }
-    for(i = 0; i < ordem; i++){
-        printf("PTR_NODE[%d]: %d\n", i, no->ptr_node[i]);
-    }
-    printf("\n");
+    return 1;
 }
 
 int main(){
@@ -255,10 +245,12 @@ int main(){
     insere(&raiz, 22, ordem);
 
     insere(&raiz, 24, ordem);
+
+    insere(&raiz, 2, ordem);
+
+    insere(&raiz, 3, ordem);
+
     printArvore(raiz, ordem);
-    printArvore(raiz->ptr_node[0], ordem);
-    printArvore(raiz->ptr_node[1], ordem);
-    printArvore(raiz->ptr_node[2], ordem);
 
     return 0;
 
